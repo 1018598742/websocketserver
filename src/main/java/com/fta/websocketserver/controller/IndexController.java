@@ -15,6 +15,9 @@ import org.springframework.web.servlet.ModelAndView;
 public class IndexController {
     private static Logger logger = LoggerFactory.getLogger(IndexController.class);
 
+    /**
+     * http://localhost:6688/netty-websocket/index-websocket
+     */
     @GetMapping("/index-websocket")
     public ModelAndView index(Model model) {
         ModelAndView modelAndView = new ModelAndView();

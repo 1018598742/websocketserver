@@ -18,10 +18,10 @@ public class MyWebsocktChannelHandler extends ChannelInitializer<SocketChannel> 
 
     @Override
     protected void initChannel(SocketChannel channel) throws Exception {
-        SSLContext sslContext = SslUtil.createSSLContext("JKS", "./sign/skeystore.jks", "123456");
+//        SSLContext sslContext = SslUtil.createSSLContext("JKS", "./sign/skeystore.jks", "123456");
         //SSLEngine 此类允许使用ssl安全套接层协议进行安全通信
-        SSLEngine engine = sslContext.createSSLEngine();
-        engine.setUseClientMode(false);
+//        SSLEngine engine = sslContext.createSSLEngine();
+//        engine.setUseClientMode(false);
 //        channel.pipeline().addLast(new SslHandler(engine));
 
         channel.pipeline().addLast("http-codec", new HttpServerCodec());
