@@ -8,17 +8,14 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 入口
  */
-public class Main {
-    static Logger logger = Logger.getLogger(Main.class);
-
-    public static void main(String[] args) {
-        new Main().start();
-    }
+public class WebsocketNetty {
+    private final static Logger logger = LoggerFactory.getLogger(WebsocketNetty.class);
 
     public void start() {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
@@ -31,9 +28,8 @@ public class Main {
             serverBootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
 //            serverBootstrap.childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, 30000);
 //            serverBootstrap.childOption(ChannelOption.SO_TIMEOUT, 30000);
-//            System.out.println("服务端开启等待连接");
             logger.info("服务端开启等待连接");
-            Channel ch = serverBootstrap.bind(8889).sync().channel();
+            Channel ch = serverBootstrap.bind(12345).sync().channel();
 //            Channel ch = serverBootstrap.bind(8899).sync().channel();
             ch.closeFuture().sync();
 
@@ -47,14 +43,11 @@ public class Main {
 
     public static void pushMessage() {
         ChannelGroup channelGroup = NettyConfig.channelGroup;
-        logInfo("channelGroup size is " + channelGroup.size());
+//        channelGroup.find()
+        logger.info("channelGroup size is " + channelGroup.size());
         if (channelGroup.size() > 0) {
             TextWebSocketFrame textWebSocketFrame = new TextWebSocketFrame("I am server,I am sending Message");
             channelGroup.writeAndFlush(textWebSocketFrame);
         }
-    }
-
-    public static void logInfo(String msg) {
-        logger.info(msg);
     }
 }

@@ -9,16 +9,20 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
+import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
+
+    private final static Logger logger = LoggerFactory.getLogger(MyWebsocketHandler.class);
 
     private WebSocketServerHandshaker webSocketServerHandshaker;
 
     //    private static final String WEBSOCKET_URL = "wss://localhost:8899/websocket";
 //    private static final String WEBSOCKET_URL = "wss://localhost:8889/websocket";
     private static final String WEBSOCKET_URL = "ws://localhost:8889/websocket";
-//    private TestTimer testTimer;
 
     /**
      * 处理请求的核心方法
@@ -29,14 +33,19 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
      */
     @Override
     protected void messageReceived(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
-//        Main.logInfo("messageReceived  处理握手请求的业务");
+        logger.info("messageReceived  处理握手请求的业务");
         //处理握手请求的业务
         if (msg instanceof FullHttpMessage) {
-//            Main.logInfo("messageReceived FullHttpMessage");
+            logger.info("messageReceived FullHttpMessage");
             handHttpRequest(channelHandlerContext, (FullHttpRequest) msg);
         } else if (msg instanceof WebSocketFrame) {//处理websocket连接业务
-//            Main.logInfo("messageReceived WebSocketFrame");
+            logger.info("messageReceived WebSocketFrame");
             handleWebsocketFrame(channelHandlerContext, (WebSocketFrame) msg);
+            if ("anzhuo".equals(channelHandlerContext.attr(AttributeKey.valueOf("type")).get())) {
+
+            }
+        } else {
+            logger.info("other received");
         }
 
     }
@@ -52,15 +61,13 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
         }
 
         if (!(frame instanceof TextWebSocketFrame)) {
-//            System.out.println(LogUtils.printMsg("暂不支持二进制消息！"));
-            Main.logInfo("暂不支持二进制消息！");
+            logger.info("暂不支持二进制消息！");
             throw new RuntimeException("【" + this.getClass().getName() + "】不支持消息");
         }
 
         //返回应答消息
         String requestMsg = ((TextWebSocketFrame) frame).text();
-//        System.out.println(LogUtils.printMsg("服务端收到客户端的消息：" + requestMsg));
-        Main.logInfo("服务端" + ctx.channel().id().asShortText() + "管道收到客户端的消息：" + requestMsg);
+        logger.info("服务端" + ctx.channel().id().asShortText() + "管道收到客户端的消息：" + requestMsg);
         if ("1111111111".equals(requestMsg)) {
             ChannelGroup channelGroup = NettyConfig.channelGroup;
             channelGroup.remove(ctx.channel());
@@ -86,11 +93,22 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
             return;
         }
 
+        HttpMethod method = fullHttpRequest.getMethod();
+        String uri = fullHttpRequest.getUri();
+        logger.info("uri=" + uri);
+        if (method == HttpMethod.GET && "/webssss".equals(uri)) {
+            ctx.attr(AttributeKey.valueOf("type")).set("anzhuo");
+        } else if (method == HttpMethod.GET && "/websocket".equals(uri)) {
+            ctx.attr(AttributeKey.valueOf("type")).set("live");
+        }
+
         WebSocketServerHandshakerFactory webSocketServerHandshakerFactory = new WebSocketServerHandshakerFactory(WEBSOCKET_URL, null, false);
         webSocketServerHandshaker = webSocketServerHandshakerFactory.newHandshaker(fullHttpRequest);
         if (webSocketServerHandshaker == null) {
+            logger.info("webSocketServerHandshaker is null");
             WebSocketServerHandshakerFactory.sendUnsupportedWebSocketVersionResponse(ctx.channel());
         } else {
+            logger.info("webSocketServerHandshaker is not null");
             webSocketServerHandshaker.handshake(ctx.channel(), fullHttpRequest);
         }
     }
@@ -117,7 +135,7 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
      */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        Main.logInfo(ctx.channel().id().asShortText() + "=连接异常：" + cause.getMessage());
+        logger.info(ctx.channel().id().asShortText() + "=连接异常：" + cause.getMessage());
         cause.printStackTrace();
         ctx.close();
 //        super.exceptionCaught(ctx, cause);
@@ -132,8 +150,7 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         boolean add = NettyConfig.channelGroup.add(ctx.channel());
-//        System.out.println(LogUtils.printMsg("客户端与服务端连接开启：" + add + "=连接的ID=" + ctx.channel().id().asLongText()));
-        Main.logInfo("客户端与服务端连接开启：" + add + "=连接的ID=" + ctx.channel().id().asLongText());
+        logger.info("客户端与服务端连接开启：" + add + "=连接的ID=" + ctx.channel().id().asLongText());
     }
 
     /**
@@ -144,9 +161,8 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-//        System.out.println(LogUtils.printMsg("客户端与服务端连接关闭:ID=" + ctx.channel().id().asLongText()));
         boolean remove = NettyConfig.channelGroup.remove(ctx.channel());
-        Main.logInfo("客户端与服务端连接关闭:" + remove + "ID=" + ctx.channel().id().asLongText());
+        logger.info("客户端与服务端连接关闭:" + remove + "ID=" + ctx.channel().id().asLongText());
     }
 
     /**
@@ -158,7 +174,7 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         ChannelHandlerContext flush = ctx.flush();
-
+        logger.info("接收数据结束后:" + ctx.channel().id().asShortText());
 //        super.channelReadComplete(ctx);
     }
 }
