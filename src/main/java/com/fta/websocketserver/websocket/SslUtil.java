@@ -22,9 +22,8 @@ public class SslUtil {
         return sslContext;
     }
 
-    public static SSLContext createSSLContext(String type, File file, String password) throws Exception {
+    public static SSLContext createSSLContext(String type, InputStream ksInputStream, String password) throws Exception {
         KeyStore ks = KeyStore.getInstance(type); /// "JKS"
-        InputStream ksInputStream = new FileInputStream(file); /// 证书存放地址
         ks.load(ksInputStream, password.toCharArray());
         //KeyManagerFactory充当基于密钥内容源的密钥管理器的工厂。
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());//getDefaultAlgorithm:获取默认的 KeyManagerFactory 算法名称。

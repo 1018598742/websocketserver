@@ -4,15 +4,13 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
-import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
-import org.springframework.util.ResourceUtils;
+import org.springframework.core.io.ClassPathResource;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import java.io.File;
+import java.io.InputStream;
 
 /**
  * 初始化连接时候的各个组件
@@ -21,8 +19,9 @@ public class MyWebsocktChannelHandler extends ChannelInitializer<SocketChannel> 
 
     @Override
     protected void initChannel(SocketChannel channel) throws Exception {
-        File file = ResourceUtils.getFile("classpath:keystore/skeystore.jks");
-        SSLContext sslContext = SslUtil.createSSLContext("JKS", file, "123456");
+        ClassPathResource classPathResource = new ClassPathResource("keystore/skeystore.jks");
+        InputStream inputStream = classPathResource.getInputStream();
+        SSLContext sslContext = SslUtil.createSSLContext("JKS", inputStream, "123456");
         //SSLEngine 此类允许使用ssl安全套接层协议进行安全通信
         SSLEngine engine = sslContext.createSSLEngine();
         engine.setUseClientMode(false);
