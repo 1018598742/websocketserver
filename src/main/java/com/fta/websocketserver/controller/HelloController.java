@@ -1,6 +1,7 @@
 package com.fta.websocketserver.controller;
 
 import com.fta.websocketserver.domain.Person;
+import com.fta.websocketserver.domain.PersonUpgrade;
 import com.fta.websocketserver.domain.Result;
 import com.fta.websocketserver.utils.ResultUtil;
 import com.fta.websocketserver.websocket.NettyConfig;
@@ -27,12 +28,16 @@ public class HelloController {
 
 
     @RequestMapping("/user/data")
-    public Result getByPerson(@Valid Person person,String userId) {
+    public Result getByPerson(@Valid Person person, String userId) {
         // 直接将json信息打印出来
-        logger.info(person.toString()+";userId={}",userId);
+        logger.info(person.toString() + ";userId={}", userId);
         TextWebSocketFrame textWebSocketFrame = new TextWebSocketFrame("hello websocket");
         NettyConfig.channelGroup.writeAndFlush(textWebSocketFrame);
-        return ResultUtil.success(person);
+        PersonUpgrade personUpgrade = new PersonUpgrade();
+        personUpgrade.setName(person.getName());
+        personUpgrade.setAge(person.getAge());
+        personUpgrade.setTime(System.currentTimeMillis());
+        return ResultUtil.success(personUpgrade);
     }
 
 //    @RequestMapping("/user/data")
