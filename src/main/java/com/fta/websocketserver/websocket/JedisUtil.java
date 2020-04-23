@@ -6,6 +6,7 @@ import com.dyuproject.protostuff.ProtostuffIOUtil;
 import com.dyuproject.protostuff.runtime.RuntimeSchema;
 import com.fta.websocketserver.redispub.RedisMsgPubSubListener;
 import com.fta.websocketserver.utils.Constants;
+import org.apache.log4j.Logger;
 import redis.clients.jedis.GeoCoordinate;
 import redis.clients.jedis.GeoRadiusResponse;
 import redis.clients.jedis.GeoUnit;
@@ -19,6 +20,8 @@ import java.io.IOException;
 import java.util.*;
 
 public class JedisUtil {
+    private final static Logger log = Logger.getLogger(MyWebsocketHandler.class);
+
     private static final int DEFAULT_SETEX_TIMEOUT = 60 * 60;// setex的默认时间
 
     public static Jedis jedis;
@@ -27,7 +30,7 @@ public class JedisUtil {
     public static void init() {
         try {
             new Thread(JedisUtil::run).start();
-            System.out.println("im init ");
+            log.info("im init ");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -45,7 +48,7 @@ public class JedisUtil {
     }
 
     public static void pushMsg(String msg) {
-        Long publish = jedis.publish(Constants.IM_QUEUE_CHANNLID, msg);
+       jedis.publish(Constants.IM_QUEUE_CHANNLID, msg);
     }
 
 

@@ -7,11 +7,9 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
-import io.netty.handler.timeout.IdleState;
-import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
+
 
 /**
  * @program: Netty-WebSocket
@@ -20,7 +18,7 @@ import org.slf4j.LoggerFactory;
 @ChannelHandler.Sharable
 public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
 
-    private static Logger log = LoggerFactory.getLogger(MyWebsocketHandler.class);
+    private final static Logger log = Logger.getLogger(MyWebsocketHandler.class);
 
     private WebSocketServerHandshaker handshaker;
 
@@ -71,7 +69,7 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
 
         // 获取客户端向服务端发送的消息
         String requestStr = ((TextWebSocketFrame) frame).text();
-        log.info("服务端收到客户端的消息: {}", requestStr);
+        log.info("服务端收到客户端的消息: " + requestStr);
 
 
         // 那个客户端发来的，继续返回给那个客户端
@@ -81,10 +79,8 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
         // 发布到redis 订阅列表中，进行广播
         String keychannel = ctx.channel().id().asLongText();
         ChannelId id = ctx.channel().id();
-        int set1 = JedisUtil.set(keychannel, requestStr);
-        log.info("set1=" + set1);
-        int set = JedisUtil.set(keychannel + "Id", id);
-        log.info("set=" + set);
+        JedisUtil.set(keychannel, requestStr);
+        JedisUtil.set(keychannel + "Id", id);
         JedisUtil.pushMsg(keychannel);
 
 
@@ -191,8 +187,6 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         // 清空数据
         ctx.flush();
-
-        log.info("flush数据 {}{}", ctx.name(), ctx.channel().id().asLongText());
     }
 
     /**

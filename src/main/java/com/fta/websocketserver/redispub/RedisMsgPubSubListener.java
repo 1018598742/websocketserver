@@ -3,27 +3,25 @@ package com.fta.websocketserver.redispub;
 
 import com.fta.websocketserver.websocket.JedisUtil;
 import com.fta.websocketserver.websocket.NettyConfig;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelId;
 import io.netty.channel.DefaultChannelId;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.internal.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 import redis.clients.jedis.JedisPubSub;
 
 import java.util.Date;
 
 /**
+ *
  */
 public class RedisMsgPubSubListener extends JedisPubSub {
 
-    private static Logger log = LoggerFactory.getLogger(RedisMsgPubSubListener.class);
+    private static Logger log = Logger.getLogger(RedisMsgPubSubListener.class);
 
     @Override
     public void onMessage(String msgChannel, String iMChannelId) {
-        log.info("RedisMsgPubSubListener-onMessage-iMChannelId="+iMChannelId+"   msgChannel="+msgChannel);
-        if (StringUtil.isNullOrEmpty(iMChannelId)){
+        if (StringUtil.isNullOrEmpty(iMChannelId)) {
             return;
         }
 
@@ -35,17 +33,17 @@ public class RedisMsgPubSubListener extends JedisPubSub {
 //        }
 
         String msg = JedisUtil.get(iMChannelId);
-        if (StringUtil.isNullOrEmpty(msg)){
+        if (StringUtil.isNullOrEmpty(msg)) {
             return;
         }
 
 
-        ChannelId id = JedisUtil.get(iMChannelId+"Id", DefaultChannelId.class);
-        if (id == null){
+        ChannelId id = JedisUtil.get(iMChannelId + "Id", DefaultChannelId.class);
+        if (id == null) {
             return;
         }
 
-        log.info("iMChannelId:"+iMChannelId+"  msg:"+msg);
+        log.info("iMChannelId:" + id.asShortText() + "  msg:" + msg);
 //        Channel channel = NettyConfig.GROUP.find(id);
 //        if (channel != null){
 //            String responseStr = new Date().toString()  + channel.id() +  " ===>>> " + msg;
@@ -56,7 +54,7 @@ public class RedisMsgPubSubListener extends JedisPubSub {
 //            JedisUtil.del(iMChannelId);
 //        }
 
-        String responseStr = new Date().toString()  + iMChannelId +  " ===>>> " + msg;
+        String responseStr = new Date().toString() + id.asShortText() + " ===>>> " + msg;
         TextWebSocketFrame tws = new TextWebSocketFrame(responseStr);
         NettyConfig.GROUP.writeAndFlush(tws);
     }
