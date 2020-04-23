@@ -32,7 +32,7 @@ public class HelloController {
         // 直接将json信息打印出来
         logger.info(person.toString() + ";userId={}", userId);
         TextWebSocketFrame textWebSocketFrame = new TextWebSocketFrame("hello websocket");
-        NettyConfig.channelGroup.writeAndFlush(textWebSocketFrame);
+//        NettyConfig.channelGroup.writeAndFlush(textWebSocketFrame);
         PersonUpgrade personUpgrade = new PersonUpgrade();
         personUpgrade.setName(person.getName());
         personUpgrade.setAge(person.getAge());
