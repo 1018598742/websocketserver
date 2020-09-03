@@ -8,6 +8,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.apache.log4j.Logger;
 
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class WebsocketServer {
     private static Logger log = Logger.getLogger(WebsocketServer.class);
@@ -18,8 +20,17 @@ public class WebsocketServer {
 
         try {
 
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    int size = NettyConfig.GROUP.size();
+                    log.info("-----------------------------连接数-----------------："+size);
+                }
+            },5000,30 * 1000);
+
             //启动订阅
-            JedisUtil.init();
+//            JedisUtil.init();
 
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(bossGroup, workGroup);
@@ -29,6 +40,8 @@ public class WebsocketServer {
             log.info("端口号："+Constants.PORT);
             Channel channel = bootstrap.bind(Constants.PORT).sync().channel();
             channel.closeFuture().sync();
+
+
         } catch (Exception e) {
             log.error("服务端启动失败", e);
         } finally {

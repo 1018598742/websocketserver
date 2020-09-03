@@ -1,7 +1,12 @@
 package com.fta.websocketserver.websocket;
 
-
+import com.alibaba.fastjson.JSON;
+import com.fta.testwebsocket.MD5Utils;
+import com.fta.websocketserver.bean.ChiledBean;
+import com.fta.websocketserver.bean.UpgradeBaseResp;
+import com.fta.websocketserver.utils.ConstType;
 import com.fta.websocketserver.utils.Constants;
+import com.fta.websocketserver.utils.ParseServerInfoHelper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -27,16 +32,17 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
      *
      * @param ctx ctx
      * @param msg msg
-     * @throws Exception Exception
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
         // 处理客户端向服务端发起http握手请求的业务
         if (msg instanceof FullHttpRequest) {
+//            log.info("is FullHttpRequest");
             handHttpRequest(ctx, (FullHttpRequest) msg);
         }
         // 处理websocket连接
         else if (msg instanceof WebSocketFrame) {
+//            log.info("is WebSocketFrame");
             handWebsocketFrame(ctx, (WebSocketFrame) msg);
         }
     }
@@ -61,15 +67,67 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
             return;
         }
 
-        // 判断是否是二进制消息，如果是二进制消息，则抛出异常
-        if (!(frame instanceof TextWebSocketFrame)) {
-            log.error("目前不支持二进制消息");
-            throw new UnsupportedOperationException("【" + this.getClass().getName() + "】不支持的消息");
+        if (frame instanceof BinaryWebSocketFrame) {
+            log.info("服务器接收到二进制消息.");
+            ByteBuf content = frame.content();
+            content.markReaderIndex();
+//            int flag = content.readInt();
+            short flag = content.readShort();
+            if (flag == ConstType.CLIENTHEART) {
+                log.info("服务端发消息了！");
+            }
+            log.info("标志位:" + flag);
+            int length = content.readInt();
+            log.info("内容长度：" + length);
+            //验证信息
+            byte[] vertify = new byte[32];
+            content.readBytes(vertify);
+            String vertifyInfo = new String(vertify);
+            log.info("验证信息：" + vertifyInfo);
+            //读数据部分
+            byte[] data = new byte[length];
+            content.readBytes(data);
+            String s = new String(data);
+            log.info("内容：" + s);
+            String s1 = new MD5Utils().stringToMD5(s);
+            if (s1 != null && s1.equals(vertifyInfo)) {
+                log.info("有效！");
+            }
+
+            content.resetReaderIndex();
+
+//            ByteBuf byteBuf = Unpooled.directBuffer(frame.content().capacity());
+//            byteBuf.writeBytes(frame.content());
+            UpgradeBaseResp<ChiledBean> chiledBeanUpgradeBaseResp = new UpgradeBaseResp<>();
+            chiledBeanUpgradeBaseResp.setCode("00000");
+            chiledBeanUpgradeBaseResp.setMsg("00描述");
+            ChiledBean chiledBean = new ChiledBean("小明", "描述");
+            chiledBeanUpgradeBaseResp.setData(chiledBean);
+            String json = JSON.toJSONString(chiledBeanUpgradeBaseResp);
+            log.info("需要发送给客户端的信息："+json);
+            ByteBuf byteBuf = ParseServerInfoHelper.INSTANCE.generByteString(flag, json);
+            if (byteBuf != null) {
+                ctx.writeAndFlush(new BinaryWebSocketFrame(byteBuf));
+            } else {
+                log.info("要返回的信息为null");
+            }
+            return;
         }
 
+        if (frame instanceof TextWebSocketFrame) {
+            String requestStr = ((TextWebSocketFrame) frame).text();
+//            log.info("服务端收到客户端的消息: " + requestStr);
+        }
+
+        // 判断是否是二进制消息，如果是二进制消息，则抛出异常
+//        if (!(frame instanceof TextWebSocketFrame)) {
+//            log.error("目前不支持二进制消息");
+//            throw new UnsupportedOperationException("【" + this.getClass().getName() + "】不支持的消息");
+//        }
+
         // 获取客户端向服务端发送的消息
-        String requestStr = ((TextWebSocketFrame) frame).text();
-        log.info("服务端收到客户端的消息: " + requestStr);
+//        String requestStr = ((TextWebSocketFrame) frame).text();
+//        log.info("服务端收到客户端的消息: " + requestStr);
 
 
         // 那个客户端发来的，继续返回给那个客户端
@@ -77,11 +135,11 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
         //channel.writeAndFlush(tws);
 
         // 发布到redis 订阅列表中，进行广播
-        String keychannel = ctx.channel().id().asLongText();
-        ChannelId id = ctx.channel().id();
-        JedisUtil.set(keychannel, requestStr);
-        JedisUtil.set(keychannel + "Id", id);
-        JedisUtil.pushMsg(keychannel);
+//        String keychannel = ctx.channel().id().asLongText();
+//        ChannelId id = ctx.channel().id();
+//        JedisUtil.set(keychannel, requestStr);
+//        JedisUtil.set(keychannel + "Id", id);
+//        JedisUtil.pushMsg(keychannel);
 
 
         // 返回应答消息
@@ -100,7 +158,22 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
      * @param request request
      */
     private void handHttpRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
-        String upgrade = request.headers().get(Constants.UPGRADE_STR);
+
+        String uri = request.uri();
+        log.info("请求地址：" + uri);
+
+        HttpHeaders headers = request.headers();
+
+        String name = headers.get("name");
+        log.info("请求头name：" + name);
+        String cert = headers.get("cert");
+        log.info("请求头cert:" + cert);
+        String ipAddress = headers.get("X-Real_IP");
+        log.info("ipAddress:" + ipAddress);
+
+
+        String upgrade = headers.get(Constants.UPGRADE_STR);
+
         // 非websocket的http握手请求处理
         if (!request.decoderResult().isSuccess() || !Constants.WEBSOCKET_STR.equals(upgrade)) {
             sendHttpResponse(ctx, request,
@@ -119,6 +192,7 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
             handshaker.handshake(ctx.channel(), request);
             log.info("正常处理");
         }
+
     }
 
     /**
@@ -199,10 +273,10 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         // 打印异常堆栈
-        cause.printStackTrace();
+//        cause.printStackTrace();
         // 主动关闭连接
         ctx.close();
-        log.error("WebSocket连接异常");
+        log.error("WebSocket连接异常:" + cause.toString());
     }
 
     /**
@@ -223,10 +297,10 @@ public class MyWebsocketHandler extends SimpleChannelInboundHandler<Object> {
 //                ctx.close();
 //
 //            } else if (event.state().equals(IdleState.WRITER_IDLE)) {
-//                log.info("WRITER_IDLE " + channelId);
+////                log.info("WRITER_IDLE " + channelId);
 //            } else if (event.state().equals(IdleState.ALL_IDLE)) {
 //                //未进行读写
-//                log.info("ALL_IDLE " + channelId);
+////                log.info("ALL_IDLE " + channelId);
 //                TextWebSocketFrame textWebSocketFrame = new TextWebSocketFrame(channelId);
 //                ctx.channel().writeAndFlush(textWebSocketFrame);
 //            }

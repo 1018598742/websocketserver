@@ -14,9 +14,10 @@ public interface Constants {
     String AGGREGATOR = "aggregator";
     String HTTP_CHUNKED = "http-chunked";
     String HANDLER = "handler";
-    int MAX_CONTENT_LENGTH = 65536;
-//    int PORT = 8989;
-    int PORT = 8982;
+//    int MAX_CONTENT_LENGTH = 65536;
+    int MAX_CONTENT_LENGTH = 10240;
+    int PORT = 8989;
+//    int PORT = 8982;
 
     String WEB_SOCKET_URL = "ws://localhost:"+PORT+"/ws";
 
